@@ -52,7 +52,6 @@ def predict_transfer(player_id, player_valuations_df, transfers_df, players_df, 
     # Probabilidade base
     contract_factor = 0.6 if contract_end <= "2025-06-30" else 0.2
     transfer_prob = min(1, (transfer_count / 10) + (100 - age) / 200 + contract_factor)
-
     # Padrões
     recent_club_patterns = get_recent_transfer_patterns(transfers_df, current_club)
     club_to_club_patterns = get_club_to_club_patterns(transfers_df, current_club)
