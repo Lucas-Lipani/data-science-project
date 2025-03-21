@@ -7,15 +7,22 @@ from models.transfer_model import predict_transfer
 
 app = Flask(__name__)
 
-# Carregar os dados uma única vez ao iniciar o servidor
+# 📂 Caminho para os arquivos de dados
 DATA_PATH = "../data/"
-appearances = pd.read_csv(DATA_PATH + "appearances.csv")
-club_games = pd.read_csv(DATA_PATH + "club_games.csv")
-clubs = pd.read_csv(DATA_PATH + "clubs.csv")
-games = pd.read_csv(DATA_PATH + "games.csv")
-players = pd.read_csv(DATA_PATH + "players.csv")
-player_valuations = pd.read_csv(DATA_PATH + "player_valuations.csv")
-transfers = pd.read_csv(DATA_PATH + "transfers.csv")
+
+# 👐 Carregar os datasets necessários
+try:
+    appearances = pd.read_csv(DATA_PATH + "appearances.csv")
+    club_games = pd.read_csv(DATA_PATH + "club_games.csv")
+    clubs = pd.read_csv(DATA_PATH + "clubs.csv")
+    games = pd.read_csv(DATA_PATH + "games.csv")
+    players = pd.read_csv(DATA_PATH + "players.csv")
+    player_valuations = pd.read_csv(DATA_PATH + "player_valuations.csv")
+    transfers = pd.read_csv(DATA_PATH + "transfers.csv")
+    market_trends = pd.read_csv(DATA_PATH + "market_trends.csv")
+except FileNotFoundError as e:
+    print(f"Erro ao carregar arquivos: {e}")
+    exit(1)
 
 @app.route("/")
 def home():
@@ -52,7 +59,7 @@ def transfer():
     if player_id is None:
         return jsonify({"error": "player_id é obrigatório"}), 400
 
-    result = predict_transfer(player_id, player_valuations, transfers, players)
+    result = predict_transfer(player_id, player_valuations, transfers, players, clubs)
     return jsonify(result)
 
 if __name__ == "__main__":
