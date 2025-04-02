@@ -11,7 +11,7 @@ def predict_match_result(home_team, away_team, club_games_df, games_df):
     avg_home_goals = home_stats["own_goals"].mean()
     avg_away_goals = away_stats["own_goals"].mean()
 
-    home_win_prob = np.random.uniform(0.3, 0.7)  # Simulação de probabilidade
+    home_win_prob = np.random.uniform(0.3, 0.7)  # Probability Simulation
     draw_prob = 1 - home_win_prob - np.random.uniform(0.1, 0.3)
     away_win_prob = 1 - home_win_prob - draw_prob
 

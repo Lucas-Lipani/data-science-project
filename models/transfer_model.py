@@ -34,7 +34,7 @@ def get_club_to_club_patterns(transfers_df, club_id):
 def predict_transfer(player_id, player_valuations_df, transfers_df, players_df, clubs_df):
     player_data = players_df[players_df["player_id"] == player_id]
     if player_data.empty:
-        return {"error": "Jogador não encontrado."}
+        return {"error": "Player not found."}
 
     valuation_data = player_valuations_df[player_valuations_df["player_id"] == player_id]
     transfer_data = transfers_df[transfers_df["player_id"] == player_id]
@@ -49,27 +49,27 @@ def predict_transfer(player_id, player_valuations_df, transfers_df, players_df, 
     current_club_name = player_data["current_club_name"].iloc[0]
     player_league = player_data["current_club_domestic_competition_id"].iloc[0]
 
-    # Probabilidade base
+    # Base probability
     contract_factor = 0.6 if contract_end <= "2025-06-30" else 0.2
     transfer_prob = min(1, (transfer_count / 10) + (100 - age) / 200 + contract_factor)
-    # Padrões
+    # Patterns
     recent_club_patterns = get_recent_transfer_patterns(transfers_df, current_club)
     club_to_club_patterns = get_club_to_club_patterns(transfers_df, current_club)
 
-    # Nacionalidade e continente
+    # Nationality and continent
     same_nationality = players_df[players_df["country_of_citizenship"] == nationality]["player_id"]
     national_transfers = transfers_df[transfers_df["player_id"].isin(same_nationality)]
     national_destinations = national_transfers["to_club_name"].value_counts(normalize=True).to_dict()
 
-    # Tendências de investimento por liga
+    # Investment trends per league
     market_trends = get_market_trends(transfers_df, clubs_df)
     investment_factor = market_trends.get(player_league, 0.3)
     transfer_prob = min(1, transfer_prob + investment_factor)
 
-    # Perfil de gastos dos clubes
+    # Club spending profile
     spending_profile = get_club_spending_profile(transfers_df)
 
-    # Construção do score de destino
+    # Destination score calculation
     likely_destinations = {}
 
     for club, prob in recent_club_patterns.items():
@@ -82,24 +82,24 @@ def predict_transfer(player_id, player_valuations_df, transfers_df, players_df, 
     for club, prob in national_destinations.items():
         likely_destinations[club] = likely_destinations.get(club, 0) + prob * 0.3
 
-    # Ajuste com investimento da liga e capacidade de pagamento dos clubes
+    # Adjust with league investment and club financial capacity
     destination_to_league = clubs_df.set_index("name")["domestic_competition_id"].to_dict()
     for club in likely_destinations:
         league_id = destination_to_league.get(club)
         if league_id and league_id in market_trends:
             likely_destinations[club] *= 1 + (market_trends[league_id] / 10)
 
-        # Ajuste pela capacidade financeira (média ± 1.5 std)
+        # Adjust by financial capacity (mean ± 1.5 std)
         if club in spending_profile and last_value:
             mean = spending_profile[club]["mean"]
             std = spending_profile[club]["std"]
             upper_limit = mean + 1.5 * std
             if last_value > upper_limit:
-                likely_destinations[club] *= 0.2  # muito improvável de pagar
+                likely_destinations[club] *= 0.2  # very unlikely to afford
             elif last_value < mean:
-                likely_destinations[club] *= 1.2  # valor acessível
+                likely_destinations[club] *= 1.2  # affordable value
 
-    # Normalizar e retornar top 5
+    # Normalize and return top 5
     total = sum(likely_destinations.values())
     if total == 0:
         return {

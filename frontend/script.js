@@ -1,8 +1,8 @@
-// Configuração da API do RapidAPI
+// API Configuration of RapidAPI
 const RAPID_API_KEY = "998ed467c9msh8cadb7dd850e39fp1dfdfjsne317cbe80c2a";
 const RAPID_API_URL = "https://YOUR_ENDPOINT_HERE/football-current-live";
 
-// Função para buscar jogos ao vivo
+// Function to search live games
 async function fetchLiveGames() {
     try {
         const response = await fetch(RAPID_API_URL, {
@@ -28,5 +28,5 @@ async function fetchLiveGames() {
     }
 }
 
-// Chamar a função ao carregar a página
+// Call the function to load the page
 fetchLiveGames();

@@ -11,10 +11,10 @@ from models.transfer_model import predict_transfer
 
 app = Flask(__name__)
 
-# 📂 Caminho para os arquivos de dados
+# Path to data files
 DATA_PATH = "../data/"
 
-# 👐 Carregar os datasets necessários
+# Load required datasets
 try:
     appearances = pd.read_csv(DATA_PATH + "appearances.csv")
     club_games = pd.read_csv(DATA_PATH + "club_games.csv")
@@ -24,10 +24,10 @@ try:
     player_valuations = pd.read_csv(DATA_PATH + "player_valuations.csv")
     transfers = pd.read_csv(DATA_PATH + "transfers.csv")
 except FileNotFoundError as e:
-    print(f"Erro ao carregar arquivos: {e}")
+    print(f"Error loading files: {e}")
     exit(1)
 
-# 🧠 Pré-processamento dos jogadores
+# Player preprocessing
 players = players.dropna(subset=["name", "date_of_birth", "current_club_name"])
 players["name_norm"] = players["name"].apply(lambda x: unidecode(str(x)).lower())
 players["date_of_birth"] = pd.to_datetime(players["date_of_birth"], errors="coerce")
@@ -37,14 +37,14 @@ players["age"] = players["date_of_birth"].apply(
 if "player_id" not in players.columns:
     players["player_id"] = players.index
 
-# 🔁 Armazena os últimos jogadores buscados para selecionar por número
+# Stores the last searched players for selection by number
 last_search = {}
 
 @app.route("/")
 def home():
-    return "API de Previsão de Futebol Rodando!"
+    return "Football Prediction API Running!"
 
-# 🎯 Busca por nome de jogador
+# Search for a player by name
 @app.route("/search_player", methods=["GET"])
 def search_player():
     query = request.args.get("q", "")
@@ -61,37 +61,37 @@ def search_player():
     result_lines = []
     for idx, row in search_results.iterrows():
         result_lines.append(
-            f"{idx + 1}. {row['name']} - {row['current_club_name']} ({row['country_of_citizenship']}, {int(row['age'])} anos)"
+            f"{idx + 1}. {row['name']} - {row['current_club_name']} ({row['country_of_citizenship']}, {int(row['age'])} years)"
         )
 
     return jsonify({"options": result_lines})
 
-# ✅ Seleciona jogador pelo número da lista anterior
+# Select a player by the number from the previous list
 @app.route("/select_player", methods=["POST"])
 def select_player():
     data = request.get_json()
     index = int(data.get("option")) - 1
 
     if "players" not in last_search or index >= len(last_search["players"]):
-        return jsonify({"error": "Seleção inválida"}), 400
+        return jsonify({"error": "Invalid selection"}), 400
 
     selected = last_search["players"].iloc[index].to_dict()
-    last_search["selected_player"] = selected  # Salva o jogador escolhido
+    last_search["selected_player"] = selected  # Save the chosen player
     return jsonify({"selected_player": selected})
 
-# ⚽ Previsão de performance (não foi alterada)
+# Performance prediction (not modified)
 @app.route("/predict_performance", methods=["POST"])
 def performance():
     data = request.json
     player_id = data.get("player_id")
 
     if player_id is None:
-        return jsonify({"error": "player_id é obrigatório"}), 400
+        return jsonify({"error": "player_id is required"}), 400
 
     result = predict_performance(player_id, appearances)
     return jsonify(result)
 
-# 🏆 Previsão de resultado de partida (não foi alterada)
+# Match result prediction (not modified)
 @app.route("/predict_match_result", methods=["POST"])
 def match_result():
     data = request.json
@@ -99,22 +99,22 @@ def match_result():
     away_team = data.get("away_team")
 
     if not home_team or not away_team:
-        return jsonify({"error": "home_team e away_team são obrigatórios"}), 400
+        return jsonify({"error": "home_team and away_team are required"}), 400
 
     result = predict_match_result(home_team, away_team, club_games, games)
     return jsonify(result)
 
-# 💰 Previsão de transferência usando jogador selecionado ou player_id
+# Transfer prediction using selected player or player_id
 @app.route("/predict_transfer", methods=["POST"])
 def transfer():
     data = request.get_json()
     player_id = data.get("player_id")
 
-    # Se não foi passado explicitamente, usa o selecionado
+    # If not explicitly provided, use the selected one
     if player_id is None:
         selected = last_search.get("selected_player")
         if not selected:
-            return jsonify({"error": "Nenhum jogador selecionado ou informado"}), 400
+            return jsonify({"error": "No player selected or provided"}), 400
         player_id = selected["player_id"]
 
     result = predict_transfer(player_id, player_valuations, transfers, players, clubs)
