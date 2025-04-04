@@ -23,6 +23,9 @@ try:
     players = pd.read_csv(DATA_PATH + "players.csv")
     player_valuations = pd.read_csv(DATA_PATH + "player_valuations.csv")
     transfers = pd.read_csv(DATA_PATH + "transfers.csv")
+    competitions = pd.read_csv(DATA_PATH + "competition.csv")
+    lineups = pd.read_csv(DATA_PATH + "game_lineups.csv")
+
 except FileNotFoundError as e:
     print(f"Error loading files: {e}")
     exit(1)

@@ -1,14 +1,15 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from xgboost import XGBClassifier
-from sklearn.metrics import classification_report, top_k_accuracy_score
-import joblib
-from datetime import datetime
 import os
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tqdm import tqdm
+from interpret.glassbox import ExplainableBoostingClassifier
 
 # Paths
 DATA_PATH = "../data/"
@@ -21,147 +22,153 @@ transfers = pd.read_csv(DATA_PATH + "transfers.csv")
 player_valuations = pd.read_csv(DATA_PATH + "player_valuations.csv")
 appearances = pd.read_csv(DATA_PATH + "appearances.csv")
 clubs = pd.read_csv(DATA_PATH + "clubs.csv")
+competitions = pd.read_csv(DATA_PATH + "competitions.csv")
 
-# Preprocessing: ensure datetime format
+# Parse dates
 players["date_of_birth"] = pd.to_datetime(players["date_of_birth"], errors="coerce")
 players["contract_expiration_date"] = pd.to_datetime(players["contract_expiration_date"], errors="coerce")
 transfers["transfer_date"] = pd.to_datetime(transfers["transfer_date"], errors="coerce")
 player_valuations["date"] = pd.to_datetime(player_valuations["date"], errors="coerce")
 appearances["date"] = pd.to_datetime(appearances["date"], errors="coerce")
 
-# Cutoff date to simulate prediction before transfer
-cutoff_date = pd.to_datetime("2022-07-01")
+# Filter only successful transfers with known destination
+transfers = transfers.dropna(subset=["to_club_id"])
 
-# Filter transfers after cutoff for target
-future_transfers = transfers[transfers["transfer_date"] >= cutoff_date].copy()
-future_transfers = future_transfers.dropna(subset=["to_club_id"])
+# Define reference date before transfer
+transfers["ref_date"] = transfers["transfer_date"] - pd.DateOffset(months=1)
 
-# Get latest valuation before cutoff
-latest_vals = player_valuations[player_valuations["date"] < cutoff_date]
-latest_vals = latest_vals.sort_values("date").groupby("player_id").last().reset_index()
+# Prepare valuation info before transfer
+latest_val = player_valuations.copy()
+latest_val = latest_val.sort_values("date")
+latest_val = latest_val.groupby("player_id", group_keys=False).apply(
+    lambda x: x.set_index("date").resample("1ME").ffill().reset_index())
 
-# Merge with player info and transfer destination
-cols_to_merge = ["player_id", "date_of_birth", "position", "sub_position", "foot", "height_in_cm", "contract_expiration_date", "country_of_citizenship", "highest_market_value_in_eur", "current_club_id"]
-for col in cols_to_merge:
-    if col not in players.columns:
-        players[col] = np.nan
+# Peak market value
+peak_value = player_valuations.groupby("player_id")["market_value_in_eur"].max().reset_index().rename(columns={"market_value_in_eur": "market_value_peak"})
 
-latest_vals = latest_vals.merge(players[["player_id"] + cols_to_merge[1:]], on="player_id", how="left")
-print("Após merge com players:", latest_vals.shape)
-latest_vals = latest_vals.merge(future_transfers[["player_id", "to_club_id", "from_club_id"]], on="player_id", how="inner")
-print("Após merge com transfers:", latest_vals.shape)
-
-
-
-# Compute age and contract remaining
-latest_vals["age"] = latest_vals["date_of_birth"].apply(lambda x: cutoff_date.year - x.year if pd.notnull(x) else None)
-latest_vals["contract_remaining"] = (latest_vals["contract_expiration_date"] - cutoff_date).dt.days / 365
-
-# Aggregate performance stats (last 6 months)
-recent_appearances = appearances[(appearances["date"] >= cutoff_date - pd.DateOffset(months=6)) & (appearances["date"] < cutoff_date)]
-perf = recent_appearances.groupby("player_id").agg({
+# Player performance stats
+total_perf = appearances.groupby("player_id").agg({
     "goals": "sum",
     "assists": "sum",
     "minutes_played": "sum",
     "appearance_id": "count"
-}).rename(columns={"appearance_id": "matches"}).reset_index()
+}).rename(columns={"appearance_id": "total_matches"}).reset_index()
+total_perf["goals_per_game"] = total_perf["goals"] / total_perf["total_matches"]
+total_perf["assists_per_game"] = total_perf["assists"] / total_perf["total_matches"]
 
-latest_vals = latest_vals.merge(perf, on="player_id", how="left")
-print("Após merge com appearances:", latest_vals.shape)
-latest_vals[["goals", "assists", "minutes_played", "matches"]] = latest_vals[["goals", "assists", "minutes_played", "matches"]].fillna(0)
+# Merge club info
+clubs = clubs.merge(competitions[["competition_id", "country_name"]], left_on="domestic_competition_id", right_on="competition_id", how="left")
+clubs.rename(columns={"country_name": "club_country"}, inplace=True)
+transfers = transfers.merge(clubs.rename(columns={"club_id": "from_club_id", "club_country": "from_club_country"}), on="from_club_id", how="left")
 
-# Additional performance metrics
-latest_vals["goals_per_game"] = latest_vals["goals"] / latest_vals["matches"]
-latest_vals["assists_per_game"] = latest_vals["assists"] / latest_vals["matches"]
-latest_vals["minutes_per_game"] = latest_vals["minutes_played"] / latest_vals["matches"]
+# Build dataset
+samples = []
+print("Building training dataset...")
 
-# Filter players with meaningful participation (at least 3 matches)
-latest_vals = latest_vals[latest_vals["matches"] >= 3]
-print("Após filtro de partidas >= 3:", latest_vals.shape)
+for _, row in tqdm(transfers.iterrows(), total=transfers.shape[0], desc="Processing transfers"):
+    pid = row["player_id"]
+    ref = row["ref_date"]
+    val = latest_val[(latest_val["player_id"] == pid) & (latest_val["date"] < ref)].sort_values("date").tail(6)
+    if val.empty:
+        continue
 
-# Filter top 15 most frequent target clubs
-# top_clubs = latest_vals["to_club_id"].value_counts().head(15).index
-# latest_vals = latest_vals[latest_vals["to_club_id"].isin(top_clubs)]
-# print("Após filtro de top 15 clubes destino:", latest_vals.shape)
+    avg_val = val["market_value_in_eur"].mean()
+    growth = (val.iloc[-1]["market_value_in_eur"] - val.iloc[0]["market_value_in_eur"]) / val.iloc[0]["market_value_in_eur"] if val.iloc[0]["market_value_in_eur"] > 0 else 0
 
-# Features and target
+    p = players[players["player_id"] == pid]
+    if p.empty:
+        continue
+    p = p.iloc[0]
+    age = (ref.year - p["date_of_birth"].year) if pd.notnull(p["date_of_birth"]) else None
+    contract_remaining = (p["contract_expiration_date"] - ref).days / 365 if pd.notnull(p["contract_expiration_date"]) else None
+
+    perf = total_perf[total_perf["player_id"] == pid]
+    if perf.empty:
+        continue
+    perf = perf.iloc[0]
+
+    peak = peak_value[peak_value["player_id"] == pid]
+    peak_val = peak["market_value_peak"].values[0] if not peak.empty else avg_val
+    decline = (peak_val - val.iloc[-1]["market_value_in_eur"]) / peak_val if peak_val > 0 else 0
+
+    samples.append({
+        "player_id": pid,
+        "age": age,
+        "market_value_in_eur": val.iloc[-1]["market_value_in_eur"],
+        "market_value_growth": growth,
+        "avg_market_value_last_6m": avg_val,
+        "market_value_peak": peak_val,
+        "market_decline_pct": decline,
+        "goals_total": perf["goals"],
+        "assists_total": perf["assists"],
+        "minutes_total": perf["minutes_played"],
+        "matches_total": perf["total_matches"],
+        "goals_per_game": perf["goals_per_game"],
+        "assists_per_game": perf["assists_per_game"],
+        "contract_remaining": contract_remaining,
+        "height_in_cm": p["height_in_cm"],
+        "position": p["position"],
+        "foot": p["foot"],
+        "country_of_citizenship": p["country_of_citizenship"],
+        "from_club_country": row["from_club_country"],
+        "to_club_id": row["to_club_id"]
+    })
+
+# DataFrame & Cleaning
+data = pd.DataFrame(samples)
+for col in ["age", "contract_remaining", "height_in_cm"]:
+    data[col] = data[col].fillna(data[col].mean())
+data = data.dropna()
+
+# Top clubs & label
+top_clubs = data["to_club_id"].value_counts().head(200).index
+data["club_target"] = data["to_club_id"].apply(lambda x: x if x in top_clubs else 9999)
+data["club_target"] = data["club_target"].astype(str)
+
+# Encoding
 features = [
-    "age", "market_value_in_eur", "contract_remaining", "highest_market_value_in_eur",
-    "goals", "assists", "minutes_played", "matches",
-    "goals_per_game", "assists_per_game", "minutes_per_game",
-    "height_in_cm", "position", "sub_position", "foot", "country_of_citizenship"
+    "age", "market_value_in_eur", "market_value_growth", "avg_market_value_last_6m",
+    "market_value_peak", "market_decline_pct", "goals_total", "assists_total",
+    "minutes_total", "matches_total", "goals_per_game", "assists_per_game",
+    "contract_remaining", "height_in_cm", "position", "foot",
+    "country_of_citizenship", "from_club_country"
 ]
-target = "to_club_id"
+X = data[features]
+y = data["club_target"]
 
-essential_features = [
-    "age", "market_value_in_eur", "contract_remaining",
-    "goals", "assists", "minutes_played", "matches",
-    "position", "foot"
-]
-print("Missing values (top 10):")
-print(latest_vals[essential_features].isnull().sum().sort_values(ascending=False).head(10))
-latest_vals["market_value_in_eur"] = latest_vals["market_value_in_eur"].replace({r"[^\d]": ""}, regex=True).astype(float)
-latest_vals["highest_market_value_in_eur"] = latest_vals["highest_market_value_in_eur"].replace({r"[^\d]": ""}, regex=True).astype(float)
-# Impute missing values for numerical and categorical features
-latest_vals["contract_remaining"] = latest_vals["contract_remaining"].fillna(-1)
-latest_vals["foot"] = latest_vals["foot"].fillna("Unknown")
-latest_vals["sub_position"] = latest_vals["sub_position"].fillna("Unknown")
-latest_vals["height_in_cm"] = latest_vals["height_in_cm"].fillna(latest_vals["height_in_cm"].median())
-latest_vals["country_of_citizenship"] = latest_vals["country_of_citizenship"].fillna("Unknown")
-print("Após imputação de missing values:", latest_vals.shape)
-X = latest_vals[features]
-y = latest_vals[target]
-
-# Encode target
-label_encoder = LabelEncoder()
-y_encoded = label_encoder.fit_transform(y)
-
-# Preprocessing pipeline
-categorical_features = ["position", "sub_position", "foot", "country_of_citizenship"]
-numerical_features = [col for col in X.columns if col not in categorical_features]
+cat_features = ["position", "foot", "country_of_citizenship", "from_club_country"]
+num_features = [col for col in features if col not in cat_features]
 
 preprocessor = ColumnTransformer([
-    ("num", StandardScaler(), numerical_features),
-    ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features)
+    ("num", StandardScaler(), num_features),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), cat_features)
 ])
 
-# Only apply preprocessing if there's data
-if X.shape[0] == 0:
-    raise ValueError("No data available after filtering. Please check filters and input files.")
-
+print("Fitting preprocessor...")
 X_processed = preprocessor.fit_transform(X)
 
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X_processed, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, stratify=y, random_state=42)
 
-# Hyperparameter search space
-param_dist = {
-    'max_depth': [3, 4, 5, 6, 7, 8],
-    'learning_rate': [0.01, 0.05, 0.1, 0.2],
-    'n_estimators': [100, 200, 300, 500],
-    'subsample': [0.6, 0.8, 1.0],
-    'colsample_bytree': [0.6, 0.8, 1.0],
-    'gamma': [0, 0.1, 0.3, 0.5],
-    'reg_alpha': [0, 0.1, 0.5],
-    'reg_lambda': [1, 1.5, 2]
-}
+# Train EBM
+print("Training Explainable Boosting Machine...")
+model = ExplainableBoostingClassifier(interactions=5, random_state=42)
+model.fit(X_train, y_train)
 
-base_model = XGBClassifier(objective="multi:softprob", num_class=len(label_encoder.classes_), eval_metric='mlogloss')
-random_search = RandomizedSearchCV(base_model, param_distributions=param_dist, n_iter=20, cv=3, verbose=1, n_jobs=-1, random_state=42)
-random_search.fit(X_train, y_train)
-
-best_model = random_search.best_estimator_
-
-# Evaluation
-y_pred = best_model.predict(X_test)
-y_proba = best_model.predict_proba(X_test)
-
+# Evaluate model
+print("Evaluating model performance...")
+y_pred = model.predict(X_test)
 print(classification_report(y_test, y_pred))
-top3_accuracy = top_k_accuracy_score(y_test, y_proba, k=3)
-print(f"Top-3 Accuracy: {top3_accuracy:.2f}")
 
-# Save model, preprocessor, and label encoder
-joblib.dump(best_model, MODEL_PATH + "xgb_club_prediction_model.pkl")
-joblib.dump(preprocessor, MODEL_PATH + "club_preprocessor.pkl")
-joblib.dump(label_encoder, MODEL_PATH + "club_label_encoder.pkl")
-print("Club prediction model, preprocessor, and label encoder saved successfully.")
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(12, 8))
+sns.heatmap(cm, cmap="Blues", xticklabels=False, yticklabels=False)
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.tight_layout()
+plt.show()
+
+# Save model & preprocessor
+joblib.dump(model, MODEL_PATH + "ebm_club_model.pkl")
+joblib.dump(preprocessor, MODEL_PATH + "preprocessor_club.pkl")
+print("EBM club prediction model and components saved successfully.")
