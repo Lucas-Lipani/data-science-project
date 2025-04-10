@@ -112,6 +112,6 @@ y_pred = model.predict(X_test)
 print(classification_report(y_test, y_pred))
 
 # Save model and preprocessor
-joblib.dump(model, MODEL_PATH + "xgb_transfer_model.pkl")
-joblib.dump(preprocessor, MODEL_PATH + "preprocessor.pkl")
+joblib.dump(model, MODEL_PATH + "xgb_transfer_model_transfer.pkl")
+joblib.dump(preprocessor, MODEL_PATH + "preprocessor_transfer.pkl")
 print("Model and preprocessor saved successfully.")
