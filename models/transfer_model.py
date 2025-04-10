@@ -42,7 +42,7 @@ def predict_transfer(player_id, player_valuations_df, transfers_df, players_df, 
     last_value = valuation_data["market_value_in_eur"].max()
     contract_end = player_data["contract_expiration_date"].iloc[0]
     nationality = player_data["country_of_citizenship"].iloc[0]
-    age = 2025 - int(player_data["date_of_birth"].iloc[0].split("-")[0])
+    age = 2025 - player_data["date_of_birth"].iloc[0].year
     last_value = int(last_value) if not np.isnan(last_value) else None
     transfer_count = len(transfer_data)
     current_club = player_data["current_club_id"].iloc[0]

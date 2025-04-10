@@ -1,7 +1,14 @@
-<!-- Navigation Bar with Search -->
-
-<header class="site-navbar py-4" role="banner">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Index - Football Stats</title>
     <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Navigation Bar with Search -->
+<header class="site-navbar py-4" role="banner">
     <div class="container d-flex align-items-center justify-content-between">
         <div class="site-logo">
             <a href="index.html"><img src="images/logo.png" alt="Logo"></a>
@@ -21,47 +28,73 @@
     </div>
 </header>
 
-<!-- Live Matches Carousel from Sportradar -->
+<!-- Live Matches (Scrolling Letreiro) -->
 <div class="site-section bg-dark text-white">
     <div class="container">
+        <!-- Professional header with English explanation -->
         <div class="row justify-content-center mb-4">
             <div class="col-md-12 text-center">
-                <h2 class="heading">Live Matches (Sportradar)</h2>
-                <p>Live carousel with real-time matches</p>
+                <h2 class="heading">Live Matches</h2>
+                <p>(Please note: these are simulated match results for demonstration purposes.)</p>
             </div>
         </div>
         <div class="row">
             <div class="col-md-12">
-                <div id="sr-widget"></div>
+                <div class="marquee-container">
+                    <div class="marquee-content">
+                        <!-- Matches with team flags/emojis. Adjust or add more matches as needed -->
+                        <strong>BRA 🇧🇷 2</strong> - 1 ARG 🇦🇷 (80') 🔴⚪ 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>ESP 🇪🇸 3</strong> - 3 FRA 🇫🇷 (70') 🔵⚪ 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>GER 🇩🇪 1</strong> - 1 ENG 🏴 (45') ⚫🟡 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>ITA 🇮🇹 0</strong> - 2 POR 🇵🇹 (FT) 🔴🟢 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>USA 🇺🇸 1</strong> - 1 MEX 🇲🇽 (HT) 🔴🔵 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>BEL 🇧🇪 4</strong> - 2 CRO 🇭🇷 (90'+3) 🔴⚫ 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>URU 🇺🇾 2</strong> - 0 COL 🇨🇴 (63') 🔵⚪ 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>CHL 🇨🇱 1</strong> - 1 ECU 🇪🇨 (38') 🔴🟡 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>JPN 🇯🇵 3</strong> - 1 KOR 🇰🇷 (FT) ⚪🔵 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <strong>CAM 🇨🇲 1</strong> - 2 NIG 🇳🇬 (78') 🟢⚪
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<script>
-    (function(a,b,c,d,e,f,g,h,i){
-        a[e]||(i=a[e]=function(){
-                (a[e].q=a[e].q||[]).push(arguments)
-            }, i.l=1*new Date, i.o=f,
-                g=b.createElement(c),
-                h=b.getElementsByTagName(c)[0],
-                g.async=1,
-                g.src=d,
-                g.setAttribute("n",e),
-                h.parentNode.insertBefore(g,h)
-        )
-    })(window,document,"script","https://widgets.media.sportradar.com/YOUR_CLIENT_ALIAS/widgetloader","SIR", {
-        language: 'en_us'
-    });
-    SIR('addWidget', '#sr-widget', 'us.match.soccer.liveMatchCarousel', {
-        uniqueTournamentId: 242,
-        autoplay: true,
-        autoplaySpeed: 1000,
-        showDate: true,
-        border: true
-    });
-</script>
 
-<!-- Three Clickable Boxes with Hover Effect -->
+<!-- Estilization and animation of the scrolling marquee -->
+<style>
+  .marquee-container {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    background-color: #333;
+    padding: 20px;
+    border-radius: 5px;
+  }
+  .marquee-content {
+    display: inline-block;
+    animation: marquee 40s linear infinite;
+    font-size: 1.1rem;
+  }
+  @keyframes marquee {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+</style>
+
+<!-- Three Clickable Boxes -->
 <div class="site-section bg-light">
     <div class="container">
         <div class="row text-center">
@@ -87,7 +120,7 @@
     </div>
 </div>
 
-<!-- Explanatory Sections with Links -->
+<!-- Informational Sections -->
 <div class="site-section">
     <div class="container">
         <div class="row">
@@ -121,7 +154,7 @@
     </div>
 </div>
 
-<!-- Smart Search Field -->
+<!-- Player Search Field -->
 <div class="site-section">
     <div class="container text-center">
         <h2 class="heading">Search a Player</h2>
@@ -131,6 +164,7 @@
 </div>
 
 <script>
+    // Example local player search functionality
     const players = [
         { name: "Lucas Moura", age: 31, position: "Forward" },
         { name: "Lucas Silva", age: 29, position: "Midfielder" },
@@ -148,10 +182,13 @@
                 div.classList.add("p-2", "bg-light", "mb-1", "border", "rounded");
                 div.innerHTML = `<strong>${p.name}</strong> - ${p.age} years old - ${p.position}`;
                 div.addEventListener("click", () => {
-                    window.location.href = `predict-transfer.html?player=${p.name}`;
+                    window.location.href = `predict-transfer.html?player=${encodeURIComponent(p.name)}`;
                 });
                 results.appendChild(div);
             });
         }
     });
 </script>
+
+</body>
+</html>

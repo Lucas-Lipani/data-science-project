@@ -3,16 +3,20 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from unidecode import unidecode
+from difflib import get_close_matches
 import os
+from flask_cors import CORS  # <= importe aqui
 
 from models.performance_model import predict_performance
 from models.match_result_model import predict_match_result
 from models.transfer_model import predict_transfer
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
+
 
 # Path to data files
-DATA_PATH = "../data/"
+DATA_PATH = "./data/"
 
 # Load required datasets
 try:
@@ -76,8 +80,17 @@ def select_player():
         return jsonify({"error": "Invalid selection"}), 400
 
     selected = last_search["players"].iloc[index].to_dict()
-    last_search["selected_player"] = selected  # Save the chosen player
-    return jsonify({"selected_player": selected})
+
+    # Limpa os NaNs (solução segura)
+    selected_clean = {k: (None if pd.isna(v) else v) for k, v in selected.items()}
+    # Adiciona o logo do clube com base no club_id
+    club_id = selected_clean.get("current_club_id")
+    if club_id:
+        selected_clean["club_logo_url"] = f"https://tmssl.akamaized.net/images/wappen/head/{int(club_id)}.png"
+
+    last_search["selected_player"] = selected_clean
+    return jsonify({"selected_player": selected_clean})
+
 
 # Performance prediction (not modified)
 @app.route("/predict_performance", methods=["POST"])
@@ -118,6 +131,38 @@ def transfer():
         player_id = selected["player_id"]
 
     result = predict_transfer(player_id, player_valuations, transfers, players, clubs)
+
+    # Enrich likely destinations with club_id for logos
+    destinations = result.get("likely_destinations", {})
+    enhanced_destinations = {}
+
+    for name, score in destinations.items():
+        club_name_norm = unidecode(name).lower()
+
+        # Try direct partial match
+        match = clubs[clubs["name"].apply(lambda x: club_name_norm in unidecode(str(x)).lower())]
+
+        # If no match, try fuzzy
+        if match.empty:
+            possible_matches = get_close_matches(club_name_norm, clubs["name"].apply(lambda x: unidecode(str(x)).lower()), n=1, cutoff=0.7)
+            if possible_matches:
+                match = clubs[clubs["name"].apply(lambda x: unidecode(str(x)).lower() == possible_matches[0])]
+
+        if not match.empty:
+            club_id = int(match.iloc[0]["club_id"])
+            enhanced_destinations[name] = {
+                "score": score,
+                "club_id": club_id
+            }
+        else:
+            print(f"[WARN] Club not found for: {name}")
+            enhanced_destinations[name] = {
+                "score": score,
+                "club_id": None
+            }
+
+    result["likely_destinations"] = enhanced_destinations
+
     return jsonify(result)
 
 if __name__ == "__main__":

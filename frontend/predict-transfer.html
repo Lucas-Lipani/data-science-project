@@ -1,10 +1,358 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+  <meta charset="UTF-8">
+  <title>Predict Transfer - Football Stats</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Marquee styling */
+    .marquee-container {
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      background-color: #333;
+      padding: 20px;
+      border-radius: 5px;
+    }
+    .marquee-content {
+      display: inline-block;
+      animation: marquee 40s linear infinite;
+      font-size: 1.1rem;
+    }
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Dropdown styling */
+    .search-dropdown {
+      position: absolute;
+      background: #fff;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 999;
+      border-radius: 4px;
+    }
+    .search-dropdown-item {
+      background-color: #fff;
+      color: #000;
+      border-bottom: 1px solid #eee;
+      padding: 8px;
+      cursor: pointer;
+    }
+    .search-dropdown-item:hover {
+      background-color: #f0f0f0;
+    }
+
+    /* Player info card styling */
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-top: 20px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      color: #000 !important;
+    }
+    .player-info img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .player-info .club-logo {
+      width: 60px;
+      height: 60px;
+    }
+    .player-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .player-details span,
+    .player-details strong {
+      color: #000 !important;
+    }
+
+    /* Prediction section styling */
+    .prediction-section {
+      margin-top: 20px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      color: #000 !important;
+    }
+    .prediction-section pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      color: #000 !important;
+    }
+
+    .player-details a {
+    color: #007bff;
+    text-decoration: underline;
+    }
+
+  </style>
 </head>
 <body>
+
+<!-- Navigation Bar -->
+<header class="site-navbar py-4" role="banner">
+  <div class="container d-flex align-items-center justify-content-between">
+    <div class="site-logo">
+      <a href="index.html"><img src="images/logo.png" alt="Logo"></a>
+    </div>
+    <nav class="site-navigation position-relative text-right" role="navigation">
+      <ul class="site-menu main-menu js-clone-nav d-none d-lg-block d-flex align-items-center">
+        <li class="active"><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="matches.html" class="nav-link">Matches</a></li>
+        <li><a href="players.html" class="nav-link">Players</a></li>
+        <li><a href="blog.html" class="nav-link">Blog</a></li>
+        <li><a href="contact.html" class="nav-link">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<!-- Live Matches Marquee -->
+<div class="site-section bg-dark text-white">
+  <div class="container">
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-12 text-center">
+        <h2 class="heading">Live Matches (Scrolling)</h2>
+        <p>Simulated matches scrolling from right to left, with flags and mock scores. (Prototype only)</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="marquee-container">
+          <div class="marquee-content">
+            <strong>BRA 🇧🇷 2</strong> - 1 <strong>ARG 🇦🇷</strong> (80') 🔴⚪ 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>ESP 🇪🇸 3</strong> - 3 <strong>FRA 🇫🇷</strong> (70') 🔵⚪ 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>GER 🇩🇪 1</strong> - 1 <strong>ENG 🏴</strong> (45') ⚫🟡 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>ITA 🇮🇹 0</strong> - 2 <strong>POR 🇵🇹</strong> (FT) 🔴🟢 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>USA 🇺🇸 1</strong> - 1 <strong>MEX 🇲🇽</strong> (HT) 🔴🔵 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>BEL 🇧🇪 4</strong> - 2 <strong>CRO 🇭🇷</strong> (90'+3) 🔴⚫ 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>URU 🇺🇾 2</strong> - 0 <strong>COL 🇨🇴</strong> (63') 🔵⚪ 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>CHL 🇨🇱 1</strong> - 1 <strong>ECU 🇪🇨</strong> (38') 🔴🟡 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>JPN 🇯🇵 3</strong> - 1 <strong>KOR 🇰🇷</strong> (FT) ⚪🔵 
+            &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <strong>CAM 🇨🇲 1</strong> - 2 <strong>NIG 🇳🇬</strong> (78') 🟢⚪
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Player Search and Transfer Prediction -->
+<div class="site-section">
+  <div class="container text-center">
+    <h2 class="heading">Predict Transfer</h2>
+    <p>Search for a player to see their details and transfer prediction results.</p>
+
+    <!-- Player search input -->
+    <div style="position: relative; margin: 0 auto; width: 50%;">
+      <input type="text" id="playerSearch" class="form-control mt-3" placeholder="Type player name..." style="width: 100%;" />
+      <div id="searchDropdown" class="search-dropdown" style="display: none;"></div>
+    </div>
+
+    <!-- Player details and prediction results -->
+    <div id="playerInfoSection"></div>
+    <div id="predictionSection"></div>
+  </div>
+</div>
+
+<script>
+  const playerSearchInput = document.getElementById("playerSearch");
+  const searchDropdown = document.getElementById("searchDropdown");
+  const playerInfoSection = document.getElementById("playerInfoSection");
+  const predictionSection = document.getElementById("predictionSection");
+
+  async function fetchPlayers(query) {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/search_player?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      const options = data.options;
+      if (!options || options.length === 0) {
+        searchDropdown.innerHTML = `<div class="search-dropdown-item">No players found.</div>`;
+        searchDropdown.style.display = "block";
+        return;
+      }
+      searchDropdown.innerHTML = "";
+      options.forEach((optionText, index) => {
+        const item = document.createElement("div");
+        item.className = "search-dropdown-item";
+        item.textContent = optionText;
+        item.addEventListener("click", () => {
+          searchDropdown.style.display = "none";
+          playerSearchInput.value = "";
+          fetch("http://127.0.0.1:5000/select_player", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ option: index + 1 })
+          })
+          .then(res => res.json())
+          .then(result => {
+            const player = result.selected_player;
+            showPlayerInfo(player);
+            fetchTransferPrediction(player.player_id);
+          })
+          .catch(err => {
+            console.error("Error selecting player:", err);
+            searchDropdown.textContent = "Error selecting player.";
+          });
+        });
+        searchDropdown.appendChild(item);
+      });
+      searchDropdown.style.display = "block";
+    } catch (err) {
+      console.error("Error fetching players:", err);
+      searchDropdown.innerHTML = `<div class="search-dropdown-item">Error fetching players.</div>`;
+      searchDropdown.style.display = "block";
+    }
+  }
+
+  function showPlayerInfo(player) {
+  playerInfoSection.innerHTML = "";
+  predictionSection.innerHTML = "";
+
+  const infoDiv = document.createElement("div");
+  infoDiv.className = "player-info";
+
+  // Player photo
+  const photo = document.createElement("img");
+  photo.src = player.image_url || "images/default_player.png";
+  photo.alt = player.name || "Player Photo";
+
+  // Club logo
+  const clubLogo = document.createElement("img");
+  clubLogo.src = player.club_logo_url || "images/default_club.png";
+  clubLogo.alt = player.current_club_name || "Club Logo";
+  clubLogo.classList.add("club-logo");
+
+  // Player details
+  const details = document.createElement("div");
+  details.className = "player-details";
+  details.innerHTML = `
+    <strong style="font-size: 1.4rem; margin-bottom: 4px;">${player.name}</strong>
+    <span><strong>Age:</strong> ${player.age || "?"}</span>
+    <span><strong>Nationality:</strong> ${player.country_of_citizenship || "?"}</span>
+    <span><strong>Current Club:</strong> ${player.current_club_name || "?"}</span>
+    <span><strong>Market Value:</strong> ${player.market_value_in_eur ? player.market_value_in_eur.toLocaleString() : "0"} €</span>
+    <a href="${player.url}" target="_blank" style="margin-top: 5px; font-size: 0.9rem;">View on Transfermarkt</a>
+  `;
+
+  infoDiv.appendChild(photo);
+  infoDiv.appendChild(details);
+  infoDiv.appendChild(clubLogo);
+
+  playerInfoSection.appendChild(infoDiv);
+}
+
+async function fetchTransferPrediction(playerId) {
+  try {
+    const response = await fetch("http://127.0.0.1:5000/predict_transfer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ player_id: playerId })
+    });
+    const predData = await response.json();
+    const destinations = predData["likely_destinations"];
+    const transferProbability = predData["transfer_probability"];
+
+    const predDiv = document.createElement("div");
+    predDiv.className = "prediction-section";
+    predDiv.innerHTML = `
+      <h3>Transfer Prediction</h3>
+      <p style="font-size: 1.1rem; font-weight: bold; color: #333;">
+        Transfer Probability: ${transferProbability}%
+      </p>
+    `;
+
+    const grid = document.createElement("div");
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(200px, 1fr))";
+    grid.style.gap = "20px";
+    grid.style.marginTop = "10px";
+
+    for (const [clubName, data] of Object.entries(destinations)) {
+      const score = data.score;
+      const clubId = data.club_id;
+
+      const clubCard = document.createElement("div");
+      clubCard.style.background = "#fff";
+      clubCard.style.border = "1px solid #ddd";
+      clubCard.style.borderRadius = "8px";
+      clubCard.style.padding = "10px";
+      clubCard.style.textAlign = "center";
+      clubCard.style.boxShadow = "0 2px 5px rgba(0,0,0,0.05)";
+
+      const logoImg = document.createElement("img");
+      if (clubId) {
+        logoImg.src = `https://tmssl.akamaized.net/images/wappen/head/${clubId}.png`;
+      } else {
+        logoImg.src = "images/default_club.png";
+      }
+      logoImg.alt = clubName;
+      logoImg.style.height = "50px";
+
+      const clubTitle = document.createElement("div");
+      clubTitle.textContent = clubName;
+      clubTitle.style.marginTop = "10px";
+      clubTitle.style.fontWeight = "bold";
+
+      const scoreText = document.createElement("div");
+      scoreText.textContent = `Score: ${score.toFixed(2)}`;
+      scoreText.style.fontSize = "0.9rem";
+      scoreText.style.color = "#555";
+
+      clubCard.appendChild(logoImg);
+      clubCard.appendChild(clubTitle);
+      clubCard.appendChild(scoreText);
+
+      grid.appendChild(clubCard);
+    }
+
+    predDiv.appendChild(grid);
+    predictionSection.innerHTML = "";
+    predictionSection.appendChild(predDiv);
+  } catch (err) {
+    console.error("Error fetching transfer prediction:", err);
+    predictionSection.innerHTML = "<p>Error fetching transfer prediction.</p>";
+  }
+}
+
+  playerSearchInput.addEventListener("input", function() {
+    const query = this.value.trim();
+    if (query.length >= 2) {
+      fetchPlayers(query);
+    } else {
+      searchDropdown.style.display = "none";
+      searchDropdown.innerHTML = "";
+    }
+  });
+
+  document.addEventListener("click", function(e) {
+    if (!e.target.closest(".search-dropdown") && e.target !== playerSearchInput) {
+      searchDropdown.style.display = "none";
+    }
+  });
+</script>
 
 </body>
 </html>
