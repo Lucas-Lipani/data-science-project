@@ -1,4 +1,8 @@
+# Arquivos compilados do Python
+*.pyc
+/backend/__pycache__/
 
-/data
-/.idea
-
+# Dados e configs locais
+/data/
+.idea/
+.vscode/
