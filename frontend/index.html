@@ -1,157 +1,72 @@
-<!-- Navigation Bar with Search -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transfer Predictor</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        input[type="text"] { width: 300px; padding: 8px; }
+        ul { list-style: none; padding: 0; margin: 0; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; width: 320px; }
+        li { padding: 8px; cursor: pointer; background: white; }
+        li:hover { background: #f0f0f0; }
+        button { margin-top: 10px; padding: 10px 20px; font-weight: bold; }
+        pre { margin-top: 20px; background: #f8f8f8; padding: 15px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+<h1>⚽ Predict Transfer</h1>
 
-<header class="site-navbar py-4" role="banner">
-    <link rel="stylesheet" href="style.css">
-    <div class="container d-flex align-items-center justify-content-between">
-        <div class="site-logo">
-            <a href="index.html"><img src="images/logo.png" alt="Logo"></a>
-        </div>
-        <nav class="site-navigation position-relative text-right" role="navigation">
-            <ul class="site-menu main-menu js-clone-nav d-none d-lg-block d-flex align-items-center">
-                <li class="active"><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="matches.html" class="nav-link">Matches</a></li>
-                <li><a href="players.html" class="nav-link">Players</a></li>
-                <li><a href="blog.html" class="nav-link">Blog</a></li>
-                <li><a href="contact.html" class="nav-link">Contact</a></li>
-                <li>
-                    <input type="text" id="navSearch" class="form-control ml-3" placeholder="Search..." style="width: 200px;">
-                </li>
-            </ul>
-        </nav>
-    </div>
-</header>
+<label for="search">Search Player:</label><br>
+<input type="text" id="search" placeholder="e.g., Mbappé" oninput="buscarJogador()">
+<ul id="suggestions"></ul>
 
-<!-- Live Matches Carousel from Sportradar -->
-<div class="site-section bg-dark text-white">
-    <div class="container">
-        <div class="row justify-content-center mb-4">
-            <div class="col-md-12 text-center">
-                <h2 class="heading">Live Matches (Sportradar)</h2>
-                <p>Live carousel with real-time matches</p>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div id="sr-widget"></div>
-            </div>
-        </div>
-    </div>
-</div>
-<script>
-    (function(a,b,c,d,e,f,g,h,i){
-        a[e]||(i=a[e]=function(){
-                (a[e].q=a[e].q||[]).push(arguments)
-            }, i.l=1*new Date, i.o=f,
-                g=b.createElement(c),
-                h=b.getElementsByTagName(c)[0],
-                g.async=1,
-                g.src=d,
-                g.setAttribute("n",e),
-                h.parentNode.insertBefore(g,h)
-        )
-    })(window,document,"script","https://widgets.media.sportradar.com/YOUR_CLIENT_ALIAS/widgetloader","SIR", {
-        language: 'en_us'
-    });
-    SIR('addWidget', '#sr-widget', 'us.match.soccer.liveMatchCarousel', {
-        uniqueTournamentId: 242,
-        autoplay: true,
-        autoplaySpeed: 1000,
-        showDate: true,
-        border: true
-    });
-</script>
+<button onclick="preverTransferencia()">Predict</button>
 
-<!-- Three Clickable Boxes with Hover Effect -->
-<div class="site-section bg-light">
-    <div class="container">
-        <div class="row text-center">
-            <div class="col-md-4">
-                <a href="predict-performance.html" class="feature-box">
-                    <h3>📊 Predict Performance</h3>
-                    <p>Analyze player performance based on statistics.</p>
-                </a>
-            </div>
-            <div class="col-md-4">
-                <a href="predict-match.html" class="feature-box">
-                    <h3>⚔️ Predict Match Result</h3>
-                    <p>Use AI to predict upcoming match outcomes.</p>
-                </a>
-            </div>
-            <div class="col-md-4">
-                <a href="predict-transfer.html" class="feature-box">
-                    <h3>🔁 Predict Transfer</h3>
-                    <p>See where players are likely to transfer next.</p>
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Explanatory Sections with Links -->
-<div class="site-section">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12 text-center mb-5">
-                <h2 class="heading">Explore Our Models</h2>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="info-box">
-                    <h3>📊 Performance Analysis</h3>
-                    <p>Using advanced machine learning techniques, we analyze players’ historical performances to estimate their future potential.</p>
-                    <a href="predict-performance.html" class="btn btn-primary">Learn More</a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="info-box">
-                    <h3>⚔️ Match Predictions</h3>
-                    <p>Our AI-driven system evaluates team strategies, player form, and historical data to predict match results.</p>
-                    <a href="predict-match.html" class="btn btn-primary">Learn More</a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="info-box">
-                    <h3>🔁 Transfer Forecast</h3>
-                    <p>Our model predicts player transfers based on trends, club history, and player statistics.</p>
-                    <a href="predict-transfer.html" class="btn btn-primary">Learn More</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Smart Search Field -->
-<div class="site-section">
-    <div class="container text-center">
-        <h2 class="heading">Search a Player</h2>
-        <input type="text" id="playerSearch" class="form-control w-50 mx-auto mt-3" placeholder="Type player name...">
-        <div id="searchResults" class="mt-3 text-left w-50 mx-auto"></div>
-    </div>
-</div>
+<pre id="resultado"></pre>
 
 <script>
-    const players = [
-        { name: "Lucas Moura", age: 31, position: "Forward" },
-        { name: "Lucas Silva", age: 29, position: "Midfielder" },
-        { name: "Lucas Ribeiro", age: 24, position: "Defender" }
-    ];
-    const input = document.getElementById("playerSearch");
-    const results = document.getElementById("searchResults");
-    input.addEventListener("input", function() {
-        const query = this.value.toLowerCase();
-        results.innerHTML = "";
-        if (query.length > 1) {
-            const filtered = players.filter(p => p.name.toLowerCase().includes(query));
-            filtered.forEach(p => {
-                const div = document.createElement("div");
-                div.classList.add("p-2", "bg-light", "mb-1", "border", "rounded");
-                div.innerHTML = `<strong>${p.name}</strong> - ${p.age} years old - ${p.position}`;
-                div.addEventListener("click", () => {
-                    window.location.href = `predict-transfer.html?player=${p.name}`;
-                });
-                results.appendChild(div);
-            });
+    let selectedIndex = null;
+    let jogadores = [];
+
+    async function buscarJogador() {
+        const query = document.getElementById("search").value;
+        if (!query) {
+            document.getElementById("suggestions").innerHTML = "";
+            return;
         }
-    });
+
+        const resposta = await fetch(`http://127.0.0.1:5000/search_player?name=${encodeURIComponent(query)}`);
+        jogadores = await resposta.json();
+
+        const lista = document.getElementById("suggestions");
+        lista.innerHTML = "";
+
+        jogadores.forEach(jogador => {
+            const item = document.createElement("li");
+            item.textContent = `${jogador.name} (${jogador.age || "?"} yrs) - ${jogador.current_club}`;
+            item.onclick = () => {
+                document.getElementById("search").value = jogador.name;
+                selectedIndex = jogador.index;
+                lista.innerHTML = "";
+            };
+            lista.appendChild(item);
+        });
+    }
+
+    async function preverTransferencia() {
+        if (selectedIndex === null) {
+            alert("Please select a player from the list.");
+            return;
+        }
+
+        const resposta = await fetch("http://127.0.0.1:5000/predict_transfer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ index: selectedIndex })
+        });
+
+        const dados = await resposta.json();
+        document.getElementById("resultado").textContent = JSON.stringify(dados, null, 2);
+    }
 </script>
+</body>
+</html>
