@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Transfer Predictor</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; }
@@ -13,6 +14,7 @@
     </style>
 </head>
 <body>
+
 <h1>⚽ Predict Transfer</h1>
 
 <label for="search">Search Player:</label><br>
@@ -24,7 +26,7 @@
 <pre id="resultado"></pre>
 
 <script>
-    let selectedIndex = null;
+    let selectedPlayerId = null;
     let jogadores = [];
 
     async function buscarJogador() {
@@ -34,7 +36,7 @@
             return;
         }
 
-        const resposta = await fetch(`http://127.0.0.1:5000/search_player?name=${encodeURIComponent(query)}`);
+        const resposta = await fetch(`/search_player?name=${encodeURIComponent(query)}`);
         jogadores = await resposta.json();
 
         const lista = document.getElementById("suggestions");
@@ -45,7 +47,7 @@
             item.textContent = `${jogador.name} (${jogador.age || "?"} yrs) - ${jogador.current_club}`;
             item.onclick = () => {
                 document.getElementById("search").value = jogador.name;
-                selectedIndex = jogador.index;
+                selectedPlayerId = jogador.player_id;  // pega o player_id correto
                 lista.innerHTML = "";
             };
             lista.appendChild(item);
@@ -53,20 +55,22 @@
     }
 
     async function preverTransferencia() {
-        if (selectedIndex === null) {
+        if (selectedPlayerId === null) {
             alert("Please select a player from the list.");
             return;
         }
 
-        const resposta = await fetch("http://127.0.0.1:5000/predict_transfer", {
+        const resposta = await fetch("/predict_transfer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ index: selectedIndex })
+            body: JSON.stringify({ player_id: selectedPlayerId })
         });
 
         const dados = await resposta.json();
+
         document.getElementById("resultado").textContent = JSON.stringify(dados, null, 2);
     }
 </script>
+
 </body>
 </html>

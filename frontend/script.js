@@ -1,32 +1,19 @@
-// API Configuration of RapidAPI
-const RAPID_API_KEY = "998ed467c9msh8cadb7dd850e39fp1dfdfjsne317cbe80c2a";
-const RAPID_API_URL = "https://YOUR_ENDPOINT_HERE/football-current-live";
+async function searchPlayer() {
+    const name = document.getElementById("playerSearch").value;
+    const response = await fetch(`/search_player?name=${name}`);
+    const players = await response.json();
 
-// Function to search live games
-async function fetchLiveGames() {
-    try {
-        const response = await fetch(RAPID_API_URL, {
-            method: "GET",
-            headers: {
-                "X-RapidAPI-Key": RAPID_API_KEY,
-                "X-RapidAPI-Host": "rapidapi.com"
-            }
-        });
+    console.log(players);  // Aqui você preenche sua lista de jogadores
 
-        const data = await response.json();
-
-        if (data && data.length > 0) {
-            document.getElementById("liveGames").innerHTML = data.map(match =>
-                `<span>${match.home_team} vs ${match.away_team} - ${match.status}</span>`
-            ).join(" | ");
-        } else {
-            document.getElementById("liveGames").textContent = "No live matches currently.";
-        }
-    } catch (error) {
-        console.error("Error fetching live games:", error);
-        document.getElementById("liveGames").textContent = "Failed to load live matches.";
-    }
+    // Quando clicar em algum:
+    fetch("/predict_transfer", {
+        method: "POST",
+        body: JSON.stringify({ player_id: players[0].player_id }),
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log(result);
+        alert(`Chance de ser transferido: ${result.transfer_probability}%`);
+    });
 }
-
-// Call the function to load the page
-fetchLiveGames();
