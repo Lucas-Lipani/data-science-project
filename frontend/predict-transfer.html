@@ -303,13 +303,19 @@ async function fetchTransferPrediction(playerId) {
       clubCard.style.boxShadow = "0 2px 5px rgba(0,0,0,0.05)";
 
       const logoImg = document.createElement("img");
+
       if (clubId) {
         logoImg.src = `https://tmssl.akamaized.net/images/wappen/head/${clubId}.png`;
+        logoImg.onerror = () => {
+          logoImg.src = "images/default_club.png";
+        };
       } else {
         logoImg.src = "images/default_club.png";
       }
+
       logoImg.alt = clubName;
       logoImg.style.height = "50px";
+
 
       const clubTitle = document.createElement("div");
       clubTitle.textContent = clubName;
@@ -317,7 +323,7 @@ async function fetchTransferPrediction(playerId) {
       clubTitle.style.fontWeight = "bold";
 
       const scoreText = document.createElement("div");
-      scoreText.textContent = `Score: ${score.toFixed(2)}`;
+      scoreText.textContent = `Chance: ${score.toFixed(1)}%`;
       scoreText.style.fontSize = "0.9rem";
       scoreText.style.color = "#555";
 
